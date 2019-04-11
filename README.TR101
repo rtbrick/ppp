@@ -1,0 +1,102 @@
+PPPoE Vendor-Specific BBF Tags (TR101)
+======================================
+
+The TR101 extension allows to add vendor-specific BBF tags 
+to PPPoE PADI and PPPoE PADR messages. This extension supports
+also new tags as defined in 
+draft-lihawi-ancp-protocol-access-extension-00.
+
+Example xDSL:
+-------------
+
+    plugin rp-pppoe.so
+    user user@domain
+    password test
+    tr101 1
+    remoteid REMOTEID
+    circuitid CIRCUITID
+    act_data_rate_up 1022
+    act_data_rate_down 16240
+    att_data_rate_up 1023
+    att_data_rate_down 16241
+    max_data_rate_up 1024
+    max_data_rate_down 16242
+    min_data_rate_up_lp 1000
+    min_data_rate_down_lp 10000
+    max_interl_delay_up 1
+    act_interl_delay_up 2
+    max_interl_delay_down 3 
+    act_interl_delay_down 4
+    data_link 1
+    encaps1 2
+    encaps2 5
+    dsl_type 3
+
+    usepeerdns
+    nomultilink
+    novj
+    defaultroute
+    noipdefault
+    noauth
+    persist
+    mtu 1492
+    mru 1492
+
+    noaccomp
+    default-asyncmap
+    lcp-echo-interval 30
+    lcp-echo-failure 4
+    passive
+    maxfail 0
+    noipv6
+
+    nic-eth0
+
+
+Example GPON:
+-------------
+
+    plugin rp-pppoe.so
+    user user@domain
+    password test
+    tr101 1
+    remoteid REMOTEID
+    circuitid CIRCUITID
+    act_data_rate_up 1022
+    act_data_rate_down 16240
+    etr_up 10001
+    etr_down 10002
+    attetr_up 10003
+    attetr_down 10005
+    gdr_up 10006
+    gdr_down 10007
+    attgdr_up 10008
+    attgdr_down 10009
+    pon_line PONLINE01
+    pon_type 1
+    ont_onu_avg_rate_down 10010
+    ont_onu_peak_rate_down 10011
+    ont_onu_max_rate_up 10012
+    ont_onu_assured_rate_up 10013
+    pon_max_rate_up 10014
+    pon_max_rate_down 10015
+
+    usepeerdns
+    nomultilink
+    novj
+    defaultroute
+    noipdefault
+    noauth
+    persist
+    mtu 1492
+    mru 1492
+
+    noaccomp
+    default-asyncmap
+    lcp-echo-interval 30
+    lcp-echo-failure 4
+    passive
+    maxfail 0
+    noipv6
+
+    nic-eth0

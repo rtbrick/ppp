@@ -49,35 +49,35 @@ parsePacket(PPPoEPacket *packet, ParseFunc *func, void *extra)
     UINT16_t tagType, tagLen;
 
     if (PPPOE_VER(packet->vertype) != 1) {
-	error("Invalid PPPoE version (%d)", PPPOE_VER(packet->vertype));
-	return -1;
+		error("Invalid PPPoE version (%d)", PPPOE_VER(packet->vertype));
+		return -1;
     }
     if (PPPOE_TYPE(packet->vertype) != 1) {
-	error("Invalid PPPoE type (%d)", PPPOE_TYPE(packet->vertype));
-	return -1;
+		error("Invalid PPPoE type (%d)", PPPOE_TYPE(packet->vertype));
+		return -1;
     }
 
     /* Do some sanity checks on packet */
     if (len > ETH_JUMBO_LEN - PPPOE_OVERHEAD) { /* 6-byte overhead for PPPoE header */
-	error("Invalid PPPoE packet length (%u)", len);
-	return -1;
+		error("Invalid PPPoE packet length (%u)", len);
+		return -1;
     }
 
     /* Step through the tags */
     curTag = packet->payload;
     while(curTag - packet->payload < len) {
-	/* Alignment is not guaranteed, so do this by hand... */
-	tagType = (curTag[0] << 8) + curTag[1];
-	tagLen = (curTag[2] << 8) + curTag[3];
-	if (tagType == TAG_END_OF_LIST) {
-	    return 0;
-	}
-	if ((curTag - packet->payload) + tagLen + TAG_HDR_SIZE > len) {
-	    error("Invalid PPPoE tag length (%u)", tagLen);
-	    return -1;
-	}
-	func(tagType, tagLen, curTag+TAG_HDR_SIZE, extra);
-	curTag = curTag + TAG_HDR_SIZE + tagLen;
+		/* Alignment is not guaranteed, so do this by hand... */
+		tagType = (curTag[0] << 8) + curTag[1];
+		tagLen = (curTag[2] << 8) + curTag[3];
+		if (tagType == TAG_END_OF_LIST) {
+			return 0;
+		}
+		if ((curTag - packet->payload) + tagLen + TAG_HDR_SIZE > len) {
+			error("Invalid PPPoE tag length (%u)", tagLen);
+			return -1;
+		}
+		func(tagType, tagLen, curTag+TAG_HDR_SIZE, extra);
+		curTag = curTag + TAG_HDR_SIZE + tagLen;
     }
     return 0;
 }
@@ -120,43 +120,43 @@ sendPADT(PPPoEConnection *conn, char const *msg)
 
     /* If we're using Host-Uniq, copy it over */
     if (conn->useHostUniq) {
-	PPPoETag hostUniq;
-	pid_t pid = getpid();
-	hostUniq.type = htons(TAG_HOST_UNIQ);
-	hostUniq.length = htons(sizeof(pid));
-	memcpy(hostUniq.payload, &pid, sizeof(pid));
-	memcpy(cursor, &hostUniq, sizeof(pid) + TAG_HDR_SIZE);
-	cursor += sizeof(pid) + TAG_HDR_SIZE;
-	plen += sizeof(pid) + TAG_HDR_SIZE;
+		PPPoETag hostUniq;
+		pid_t pid = getpid();
+		hostUniq.type = htons(TAG_HOST_UNIQ);
+		hostUniq.length = htons(sizeof(pid));
+		memcpy(hostUniq.payload, &pid, sizeof(pid));
+		memcpy(cursor, &hostUniq, sizeof(pid) + TAG_HDR_SIZE);
+		cursor += sizeof(pid) + TAG_HDR_SIZE;
+		plen += sizeof(pid) + TAG_HDR_SIZE;
     }
 
     /* Copy error message */
     if (msg) {
-	PPPoETag err;
-	size_t elen = strlen(msg);
-	err.type = htons(TAG_GENERIC_ERROR);
-	err.length = htons(elen);
-	strcpy(err.payload, msg);
-	memcpy(cursor, &err, elen + TAG_HDR_SIZE);
-	cursor += elen + TAG_HDR_SIZE;
-	plen += elen + TAG_HDR_SIZE;
+		PPPoETag err;
+		size_t elen = strlen(msg);
+		err.type = htons(TAG_GENERIC_ERROR);
+		err.length = htons(elen);
+		strcpy(err.payload, msg);
+		memcpy(cursor, &err, elen + TAG_HDR_SIZE);
+		cursor += elen + TAG_HDR_SIZE;
+		plen += elen + TAG_HDR_SIZE;
     }
 
     /* Copy cookie and relay-ID if needed */
     if (conn->cookie.type) {
-	CHECK_ROOM(cursor, packet.payload,
-		   ntohs(conn->cookie.length) + TAG_HDR_SIZE);
-	memcpy(cursor, &conn->cookie, ntohs(conn->cookie.length) + TAG_HDR_SIZE);
-	cursor += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
-	plen += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
+		CHECK_ROOM(cursor, packet.payload,
+			ntohs(conn->cookie.length) + TAG_HDR_SIZE);
+		memcpy(cursor, &conn->cookie, ntohs(conn->cookie.length) + TAG_HDR_SIZE);
+		cursor += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
+		plen += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
     }
 
     if (conn->relayId.type) {
-	CHECK_ROOM(cursor, packet.payload,
-		   ntohs(conn->relayId.length) + TAG_HDR_SIZE);
-	memcpy(cursor, &conn->relayId, ntohs(conn->relayId.length) + TAG_HDR_SIZE);
-	cursor += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
-	plen += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
+		CHECK_ROOM(cursor, packet.payload,
+			ntohs(conn->relayId.length) + TAG_HDR_SIZE);
+		memcpy(cursor, &conn->relayId, ntohs(conn->relayId.length) + TAG_HDR_SIZE);
+		cursor += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
+		plen += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
     }
 
     packet.length = htons(plen);

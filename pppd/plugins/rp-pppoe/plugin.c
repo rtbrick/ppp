@@ -69,6 +69,47 @@ static int printACNames = 0;
 static char *pppoe_reqd_mac = NULL;
 unsigned char pppoe_reqd_mac_addr[6];
 
+// PPPoE Vendor-Specific BBF Sub-Tags (TR101)
+static int tr101 = 0;
+static char *remoteid = NULL;
+static char *circuitid = NULL;
+static unsigned int act_data_rate_up = 0;
+static unsigned int act_data_rate_down = 0;
+static unsigned int min_data_rate_up = 0;
+static unsigned int min_data_rate_down = 0;
+static unsigned int att_data_rate_up = 0;
+static unsigned int att_data_rate_down = 0;
+static unsigned int max_data_rate_up = 0;
+static unsigned int max_data_rate_down = 0;
+static unsigned int min_data_rate_up_lp = 0;
+static unsigned int min_data_rate_down_lp = 0;
+static unsigned int max_interl_delay_up = 0;
+static unsigned int act_interl_delay_up = 0;
+static unsigned int max_interl_delay_down = 0;
+static unsigned int act_interl_delay_down = 0;
+static unsigned int data_link = 0;
+static unsigned int encaps1 = 0;
+static unsigned int encaps2 = 0;
+static unsigned int dsl_type = 0;
+// draft-lihawi-ancp-protocol-access-extension-00
+static unsigned int etr_up = 0;
+static unsigned int etr_down = 0;
+static unsigned int attetr_up = 0;
+static unsigned int attetr_down = 0;
+static unsigned int gdr_up = 0;
+static unsigned int gdr_down = 0;
+static unsigned int attgdr_up = 0;
+static unsigned int attgdr_down = 0;
+static unsigned char *pon_line = 0;
+static unsigned int pon_type = 0;
+static unsigned int ont_onu_avg_rate_down = 0;
+static unsigned int ont_onu_peak_rate_down = 0;
+static unsigned int ont_onu_max_rate_up = 0;
+static unsigned int ont_onu_assured_rate_up = 0;
+static unsigned int pon_max_rate_up = 0;
+static unsigned int pon_max_rate_down = 0;
+
+
 static int PPPoEDevnameHook(char *cmd, char **argv, int doit);
 static option_t Options[] = {
     { "device name", o_wild, (void *) &PPPoEDevnameHook,
@@ -85,6 +126,80 @@ static option_t Options[] = {
       "Be verbose about discovered access concentrators"},
     { "pppoe-mac", o_string, &pppoe_reqd_mac,
       "Only connect to specified MAC address" },
+    { "tr101", o_int, &tr101,
+      "Enable PPPoE Tags defined in Broadband Forum TR101" },
+    { "remoteid", o_string, &remoteid,
+      "TR101 Agent-Remote-Id"},
+    { "circuitid", o_string, &circuitid,
+      "TR101 Agent-Circuit-Id"},
+    { "act_data_rate_up", o_int, &act_data_rate_up,
+      "TR101 Actual Data Rate Upstream" },
+    { "act_data_rate_down", o_int, &act_data_rate_down,
+      "TR101 Actual Data Rate Downstream" },
+    { "min_data_rate_up", o_int, &min_data_rate_up,
+      "TR101 Minimum Data Rate Upstream" },
+    { "min_data_rate_down", o_int, &min_data_rate_down,
+      "TR101 Minimum Data Rate Downstream" },
+    { "att_data_rate_up", o_int, &att_data_rate_up,
+      "TR101 Attainable Data Rate Upstream" },
+    { "att_data_rate_down", o_int, &att_data_rate_down,
+      "TR101 Attainable Data Rate Downstream" },
+    { "max_data_rate_up", o_int, &max_data_rate_up,
+      "TR101 Maximum Data Rate Upstream" },
+    { "max_data_rate_down", o_int, &max_data_rate_down,
+      "TR101 Maximum Data Rate Downstream" },
+     { "min_data_rate_up_lp", o_int, &min_data_rate_up_lp,
+      "TR101 Minimum Data Rate Upstream in low power state" },
+    { "min_data_rate_down_lp", o_int, &min_data_rate_down_lp,
+      "TR101 Minimum Data Rate Downstream in low power state" },
+     { "max_interl_delay_up", o_int, &max_interl_delay_up,
+      "TR101 Maximum Interleaving Delay Upstream" },
+    { "act_interl_delay_up", o_int, &act_interl_delay_up,
+      "TR101 Actual Interleaving Delay Upstream" },
+     { "max_interl_delay_down", o_int, &max_interl_delay_down,
+      "TR101 Maximum Interleaving Delay Downstream" },
+    { "act_interl_delay_down", o_int, &act_interl_delay_down,
+      "TR101 Actual Interleaving Delay Downstream " },
+    { "data_link", o_int, &data_link,
+      "TR101 Access Loop Encapsulation Data Link" },
+    { "encaps1", o_int, &encaps1,
+      "TR101 Access Loop Encapsulation Encaps 1" },
+    { "encaps2", o_int, &encaps2,
+      "TR101 Access Loop Encapsulation Encaps 2" },
+    { "dsl_type", o_int, &dsl_type,
+      "TR101 DSL Type" },
+    { "etr_up", o_int, &etr_up,
+      "TR101 Expected Throughput (ETR) Upstream" },
+    { "etr_down", o_int, &etr_down,
+      "TR101 Expected Throughput (ETR) Downstream" },
+    { "attetr_up", o_int, &attetr_up,
+      "TR101 Attainable Expected Throughput (ATTETR) Upstream" },
+    { "attetr_down", o_int, &attetr_down,
+      "TR101 Attainable Expected Throughput (ATTETR) Downstream" },
+    { "gdr_up", o_int, &gdr_up,
+      "TR101 Gamma Data Rate (GDR) Upstream" },
+    { "gdr_down", o_int, &gdr_down,
+      "TR101 Gamma Data Rate (GDR) Downstream" },
+    { "attgdr_up", o_int, &attgdr_up,
+      "TR101 Attainable Gamma Data Rate (ATTGDR) Upstream" },
+    { "attgdr_down", o_int, &attgdr_down,
+      "TR101 Attainable Gamma Data Rate (ATTGDR) Downstream" },
+    { "pon_line", o_string, &pon_line,
+      "TR101 PON-Access-Line-Attributes" },
+    { "pon_type", o_int, &pon_type,
+      "TR101 PON-Access-Type" },
+    { "ont_onu_avg_rate_down", o_int, &ont_onu_avg_rate_down,
+      "TR101 ONT/ONU-Average-Data-Rate-Downstream" },
+    { "ont_onu_peak_rate_down", o_int, &ont_onu_peak_rate_down,
+      "TR101 ONT/ONU-Peak-Data-Rate-Downstream" },
+    { "ont_onu_max_rate_up", o_int, &ont_onu_max_rate_up,
+      "TR101 ONT/ONU-Maximum-Data-Rate-Upstream" },
+    { "ont_onu_assured_rate_up", o_int, &ont_onu_assured_rate_up,
+      "TR101 ONT/ONU-Assured-Data-Rate-Upstream" },
+    { "pon_max_rate_up", o_int, &pon_max_rate_up,
+      "TR101 PON-Tree-Maximum-Data-Rate-Upstream" },
+    { "pon_max_rate_down", o_int, &pon_max_rate_down,
+      "TR101 PON-Tree-Maximum-Data-Rate-Downstream" },
     { NULL }
 };
 int (*OldDevnameHook)(char *cmd, char **argv, int doit) = NULL;
@@ -139,8 +254,8 @@ PPPOEConnectDevice(void)
     /* function would be more appropriate, but it would mess-up the code   */
     conn->sessionSocket = socket(AF_PPPOX, SOCK_STREAM, PX_PROTO_OE);
     if (conn->sessionSocket < 0) {
-	error("Failed to create PPPoE socket: %m");
-	return -1;
+      error("Failed to create PPPoE socket: %m");
+      return -1;
     }
 
     /* Restore configuration */
@@ -150,45 +265,85 @@ PPPOEConnectDevice(void)
     /* Update maximum MRU */
     s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s < 0) {
-	error("Can't get MTU for %s: %m", conn->ifName);
-	goto errout;
+      error("Can't get MTU for %s: %m", conn->ifName);
+      goto errout;
     }
     strncpy(ifr.ifr_name, conn->ifName, sizeof(ifr.ifr_name));
     if (ioctl(s, SIOCGIFMTU, &ifr) < 0) {
-	error("Can't get MTU for %s: %m", conn->ifName);
-	close(s);
-	goto errout;
+      error("Can't get MTU for %s: %m", conn->ifName);
+      close(s);
+      goto errout;
     }
     close(s);
 
     if (lcp_allowoptions[0].mru > ifr.ifr_mtu - TOTAL_OVERHEAD)
-	lcp_allowoptions[0].mru = ifr.ifr_mtu - TOTAL_OVERHEAD;
+	    lcp_allowoptions[0].mru = ifr.ifr_mtu - TOTAL_OVERHEAD;
     if (lcp_wantoptions[0].mru > ifr.ifr_mtu - TOTAL_OVERHEAD)
-	lcp_wantoptions[0].mru = ifr.ifr_mtu - TOTAL_OVERHEAD;
+	    lcp_wantoptions[0].mru = ifr.ifr_mtu - TOTAL_OVERHEAD;
 
     conn->acName = acName;
     conn->serviceName = pppd_pppoe_service;
+
+    /* copy TR101 options in conn */
+    conn->tr101 = tr101;
+    if (remoteid); conn->remoteid = remoteid;
+    if (circuitid); conn->circuitid = circuitid;
+    if (act_data_rate_up); conn->act_data_rate_up = act_data_rate_up;
+    if (act_data_rate_down); conn->act_data_rate_down = act_data_rate_down;
+    if (min_data_rate_up); conn->min_data_rate_up = min_data_rate_up;
+    if (min_data_rate_down); conn->min_data_rate_down = min_data_rate_down;
+    if (att_data_rate_up); conn->att_data_rate_up = att_data_rate_up;
+    if (att_data_rate_down); conn->att_data_rate_down = att_data_rate_down;
+    if (max_data_rate_up); conn->max_data_rate_up = max_data_rate_up;
+    if (max_data_rate_down); conn->max_data_rate_down = max_data_rate_down;
+    if (min_data_rate_up_lp); conn->min_data_rate_up_lp = min_data_rate_up_lp;
+    if (min_data_rate_down_lp); conn->min_data_rate_down_lp = min_data_rate_down_lp;
+    if (max_interl_delay_up); conn->max_interl_delay_up = max_interl_delay_up;
+    if (act_interl_delay_up); conn->act_interl_delay_up = act_interl_delay_up;
+    if (max_interl_delay_down); conn->max_interl_delay_down = max_interl_delay_down;
+    if (act_interl_delay_down); conn->act_interl_delay_down = act_interl_delay_down;
+    if (data_link); conn->data_link = data_link;
+    if (encaps1); conn->encaps1 = encaps1;
+    if (encaps2); conn->encaps2 = encaps2;
+    if (dsl_type); conn->dsl_type = dsl_type;
+    if (etr_up); conn->etr_up = etr_up;
+    if (etr_down); conn->etr_down = etr_down;
+    if (attetr_up); conn->attetr_up = attetr_up;
+    if (attetr_down); conn->attetr_down = attetr_down;
+    if (gdr_up); conn->gdr_up = gdr_up;
+    if (gdr_down); conn->gdr_down = gdr_down;
+    if (attgdr_up); conn->attgdr_up = attgdr_up;
+    if (attgdr_down); conn->attgdr_down = attgdr_down;
+    if (pon_line); conn->pon_line = pon_line;
+    if (pon_type); conn->pon_type = pon_type;
+    if (ont_onu_avg_rate_down); conn->ont_onu_avg_rate_down = ont_onu_avg_rate_down;
+    if (ont_onu_peak_rate_down); conn->ont_onu_peak_rate_down = ont_onu_peak_rate_down;
+    if (ont_onu_max_rate_up); conn->ont_onu_max_rate_up = ont_onu_max_rate_up;
+    if (ont_onu_assured_rate_up); conn->ont_onu_assured_rate_up = ont_onu_assured_rate_up;
+    if (pon_max_rate_up); conn->pon_max_rate_up = pon_max_rate_up;
+    if (pon_max_rate_down); conn->pon_max_rate_down = pon_max_rate_down;
+
     strlcpy(ppp_devnam, devnam, sizeof(ppp_devnam));
     if (existingSession) {
-	unsigned int mac[ETH_ALEN];
-	int i, ses;
-	if (sscanf(existingSession, "%d:%x:%x:%x:%x:%x:%x",
-		   &ses, &mac[0], &mac[1], &mac[2],
-		   &mac[3], &mac[4], &mac[5]) != 7) {
-	    fatal("Illegal value for rp_pppoe_sess option");
-	}
-	conn->session = htons(ses);
-	for (i=0; i<ETH_ALEN; i++) {
-	    conn->peerEth[i] = (unsigned char) mac[i];
-	}
+        unsigned int mac[ETH_ALEN];
+        int i, ses;
+        if (sscanf(existingSession, "%d:%x:%x:%x:%x:%x:%x",
+            &ses, &mac[0], &mac[1], &mac[2],
+            &mac[3], &mac[4], &mac[5]) != 7) {
+            fatal("Illegal value for rp_pppoe_sess option");
+        }
+        conn->session = htons(ses);
+        for (i=0; i<ETH_ALEN; i++) {
+            conn->peerEth[i] = (unsigned char) mac[i];
+        }
     } else {
-	conn->discoverySocket =
-            openInterface(conn->ifName, Eth_PPPOE_Discovery, conn->myEth);
-	discovery(conn);
-	if (conn->discoveryState != STATE_SESSION) {
-	    error("Unable to complete PPPoE Discovery");
-	    goto errout;
-	}
+        conn->discoverySocket =
+                  openInterface(conn->ifName, Eth_PPPOE_Discovery, conn->myEth);
+        discovery(conn);
+        if (conn->discoveryState != STATE_SESSION) {
+            error("Unable to complete PPPoE Discovery");
+            goto errout;
+        }
     }
 
     /* Set PPPoE session-number for further consumption */

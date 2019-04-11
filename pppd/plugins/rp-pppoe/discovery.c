@@ -214,39 +214,39 @@ parsePADSTags(UINT16_t type, UINT16_t len, unsigned char *data,
     PPPoEConnection *conn = (PPPoEConnection *) extra;
     UINT16_t mru;
     switch(type) {
-    case TAG_SERVICE_NAME:
-	dbglog("PADS: Service-Name: '%.*s'", (int) len, data);
-	break;
-    case TAG_PPP_MAX_PAYLOAD:
-	if (len == sizeof(mru)) {
-	    memcpy(&mru, data, sizeof(mru));
-	    mru = ntohs(mru);
-	    if (mru >= ETH_PPPOE_MTU) {
-		if (lcp_allowoptions[0].mru > mru)
-		    lcp_allowoptions[0].mru = mru;
-		if (lcp_wantoptions[0].mru > mru)
-		    lcp_wantoptions[0].mru = mru;
-		conn->seenMaxPayload = 1;
-	    }
-	}
-	break;
-    case TAG_SERVICE_NAME_ERROR:
-	error("PADS: Service-Name-Error: %.*s", (int) len, data);
-	conn->error = 1;
-	break;
-    case TAG_AC_SYSTEM_ERROR:
-	error("PADS: System-Error: %.*s", (int) len, data);
-	conn->error = 1;
-	break;
-    case TAG_GENERIC_ERROR:
-	error("PADS: Generic-Error: %.*s", (int) len, data);
-	conn->error = 1;
-	break;
-    case TAG_RELAY_SESSION_ID:
-	conn->relayId.type = htons(type);
-	conn->relayId.length = htons(len);
-	memcpy(conn->relayId.payload, data, len);
-	break;
+		case TAG_SERVICE_NAME:
+			dbglog("PADS: Service-Name: '%.*s'", (int) len, data);
+			break;
+		case TAG_PPP_MAX_PAYLOAD:
+			if (len == sizeof(mru)) {
+				memcpy(&mru, data, sizeof(mru));
+				mru = ntohs(mru);
+				if (mru >= ETH_PPPOE_MTU) {
+					if (lcp_allowoptions[0].mru > mru)
+						lcp_allowoptions[0].mru = mru;
+					if (lcp_wantoptions[0].mru > mru)
+						lcp_wantoptions[0].mru = mru;
+					conn->seenMaxPayload = 1;
+				}
+			}
+			break;
+		case TAG_SERVICE_NAME_ERROR:
+			error("PADS: Service-Name-Error: %.*s", (int) len, data);
+			conn->error = 1;
+			break;
+		case TAG_AC_SYSTEM_ERROR:
+			error("PADS: System-Error: %.*s", (int) len, data);
+			conn->error = 1;
+			break;
+		case TAG_GENERIC_ERROR:
+			error("PADS: Generic-Error: %.*s", (int) len, data);
+			conn->error = 1;
+			break;
+		case TAG_RELAY_SESSION_ID:
+			conn->relayId.type = htons(type);
+			conn->relayId.length = htons(len);
+			memcpy(conn->relayId.payload, data, len);
+			break;
     }
 }
 
@@ -270,10 +270,10 @@ sendPADI(PPPoEConnection *conn)
     int omit_service_name = 0;
 
     if (conn->serviceName) {
-	namelen = (UINT16_t) strlen(conn->serviceName);
-	if (!strcmp(conn->serviceName, "NO-SERVICE-NAME-NON-RFC-COMPLIANT")) {
-	    omit_service_name = 1;
-	}
+		namelen = (UINT16_t) strlen(conn->serviceName);
+		if (!strcmp(conn->serviceName, "NO-SERVICE-NAME-NON-RFC-COMPLIANT")) {
+			omit_service_name = 1;
+		}
     }
 
     /* Set destination to Ethernet broadcast address */
@@ -286,48 +286,49 @@ sendPADI(PPPoEConnection *conn)
     packet.session = 0;
 
     if (!omit_service_name) {
-	plen = TAG_HDR_SIZE + namelen;
-	CHECK_ROOM(cursor, packet.payload, plen);
+		plen = TAG_HDR_SIZE + namelen;
+		CHECK_ROOM(cursor, packet.payload, plen);
 
-	svc->type = TAG_SERVICE_NAME;
-	svc->length = htons(namelen);
+		svc->type = TAG_SERVICE_NAME;
+		svc->length = htons(namelen);
 
-	if (conn->serviceName) {
-	    memcpy(svc->payload, conn->serviceName, strlen(conn->serviceName));
-	}
-	cursor += namelen + TAG_HDR_SIZE;
+		if (conn->serviceName) {
+			memcpy(svc->payload, conn->serviceName, strlen(conn->serviceName));
+		}
+		cursor += namelen + TAG_HDR_SIZE;
     } else {
-	plen = 0;
+		plen = 0;
     }
 
     /* If we're using Host-Uniq, copy it over */
     if (conn->useHostUniq) {
-	PPPoETag hostUniq;
-	pid_t pid = getpid();
-	hostUniq.type = htons(TAG_HOST_UNIQ);
-	hostUniq.length = htons(sizeof(pid));
-	memcpy(hostUniq.payload, &pid, sizeof(pid));
-	CHECK_ROOM(cursor, packet.payload, sizeof(pid) + TAG_HDR_SIZE);
-	memcpy(cursor, &hostUniq, sizeof(pid) + TAG_HDR_SIZE);
-	cursor += sizeof(pid) + TAG_HDR_SIZE;
-	plen += sizeof(pid) + TAG_HDR_SIZE;
+		PPPoETag hostUniq;
+		pid_t pid = getpid();
+		hostUniq.type = htons(TAG_HOST_UNIQ);
+		hostUniq.length = htons(sizeof(pid));
+		memcpy(hostUniq.payload, &pid, sizeof(pid));
+		CHECK_ROOM(cursor, packet.payload, sizeof(pid) + TAG_HDR_SIZE);
+		memcpy(cursor, &hostUniq, sizeof(pid) + TAG_HDR_SIZE);
+		cursor += sizeof(pid) + TAG_HDR_SIZE;
+		plen += sizeof(pid) + TAG_HDR_SIZE;
     }
 
     /* Add our maximum MTU/MRU */
     if (MIN(lcp_allowoptions[0].mru, lcp_wantoptions[0].mru) > ETH_PPPOE_MTU) {
-	PPPoETag maxPayload;
-	UINT16_t mru = htons(MIN(lcp_allowoptions[0].mru, lcp_wantoptions[0].mru));
-	maxPayload.type = htons(TAG_PPP_MAX_PAYLOAD);
-	maxPayload.length = htons(sizeof(mru));
-	memcpy(maxPayload.payload, &mru, sizeof(mru));
-	CHECK_ROOM(cursor, packet.payload, sizeof(mru) + TAG_HDR_SIZE);
-	memcpy(cursor, &maxPayload, sizeof(mru) + TAG_HDR_SIZE);
-	cursor += sizeof(mru) + TAG_HDR_SIZE;
-	plen += sizeof(mru) + TAG_HDR_SIZE;
+		PPPoETag maxPayload;
+		UINT16_t mru = htons(MIN(lcp_allowoptions[0].mru, lcp_wantoptions[0].mru));
+		maxPayload.type = htons(TAG_PPP_MAX_PAYLOAD);
+		maxPayload.length = htons(sizeof(mru));
+		memcpy(maxPayload.payload, &mru, sizeof(mru));
+		CHECK_ROOM(cursor, packet.payload, sizeof(mru) + TAG_HDR_SIZE);
+		memcpy(cursor, &maxPayload, sizeof(mru) + TAG_HDR_SIZE);
+		cursor += sizeof(mru) + TAG_HDR_SIZE;
+		plen += sizeof(mru) + TAG_HDR_SIZE;
     }
 
-    packet.length = htons(plen);
+	addTR101(conn, &packet, &plen, &cursor);
 
+    packet.length = htons(plen);
     sendPacket(conn, conn->discoverySocket, &packet, (int) (plen + HDR_SIZE));
 }
 
@@ -362,78 +363,78 @@ waitForPADO(PPPoEConnection *conn, int timeout)
     conn->error = 0;
 
     if (gettimeofday(&expire_at, NULL) < 0) {
-	error("gettimeofday (waitForPADO): %m");
-	return;
+		error("gettimeofday (waitForPADO): %m");
+		return;
     }
     expire_at.tv_sec += timeout;
 
     do {
-	if (BPF_BUFFER_IS_EMPTY) {
-	    if (!time_left(&tv, &expire_at))
-		return;		/* Timed out */
+		if (BPF_BUFFER_IS_EMPTY) {
+			if (!time_left(&tv, &expire_at))
+				return;		/* Timed out */
 
-	    FD_ZERO(&readable);
-	    FD_SET(conn->discoverySocket, &readable);
+			FD_ZERO(&readable);
+			FD_SET(conn->discoverySocket, &readable);
 
-	    while(1) {
-		r = select(conn->discoverySocket+1, &readable, NULL, NULL, &tv);
-		if (r >= 0 || errno != EINTR) break;
-	    }
-	    if (r < 0) {
-		error("select (waitForPADO): %m");
-		return;
-	    }
-	    if (r == 0)
-		return;		/* Timed out */
-	}
+			while(1) {
+				r = select(conn->discoverySocket+1, &readable, NULL, NULL, &tv);
+				if (r >= 0 || errno != EINTR) break;
+			}
+			if (r < 0) {
+				error("select (waitForPADO): %m");
+				return;
+			}
+			if (r == 0)
+				return;		/* Timed out */
+		}
 
-	/* Get the packet */
-	receivePacket(conn->discoverySocket, &packet, &len);
+		/* Get the packet */
+		receivePacket(conn->discoverySocket, &packet, &len);
 
-	/* Check length */
-	if (ntohs(packet.length) + HDR_SIZE > len) {
-	    error("Bogus PPPoE length field (%u)",
-		   (unsigned int) ntohs(packet.length));
-	    continue;
-	}
+		/* Check length */
+		if (ntohs(packet.length) + HDR_SIZE > len) {
+			error("Bogus PPPoE length field (%u)",
+			(unsigned int) ntohs(packet.length));
+			continue;
+		}
 
 #ifdef USE_BPF
-	/* If it's not a Discovery packet, loop again */
-	if (etherType(&packet) != Eth_PPPOE_Discovery) continue;
+		/* If it's not a Discovery packet, loop again */
+		if (etherType(&packet) != Eth_PPPOE_Discovery) continue;
 #endif
 
-	/* If it's not for us, loop again */
-	if (!packetIsForMe(conn, &packet)) continue;
+		/* If it's not for us, loop again */
+		if (!packetIsForMe(conn, &packet)) continue;
 
-	if (packet.code == CODE_PADO) {
-	    if (NOT_UNICAST(packet.ethHdr.h_source)) {
-		error("Ignoring PADO packet from non-unicast MAC address");
-		continue;
-	    }
-	    if (conn->req_peer
-		&& memcmp(packet.ethHdr.h_source, conn->req_peer_mac, ETH_ALEN) != 0) {
-		warn("Ignoring PADO packet from wrong MAC address");
-		continue;
-	    }
-	    if (parsePacket(&packet, parsePADOTags, &pc) < 0)
-		return;
-	    if (conn->error)
-		return;
-	    if (!pc.seenACName) {
-		error("Ignoring PADO packet with no AC-Name tag");
-		continue;
-	    }
-	    if (!pc.seenServiceName) {
-		error("Ignoring PADO packet with no Service-Name tag");
-		continue;
-	    }
-	    conn->numPADOs++;
-	    if (pc.acNameOK && pc.serviceNameOK) {
-		memcpy(conn->peerEth, packet.ethHdr.h_source, ETH_ALEN);
-		conn->discoveryState = STATE_RECEIVED_PADO;
-		break;
-	    }
-	}
+		if (packet.code == CODE_PADO) {
+			if (NOT_UNICAST(packet.ethHdr.h_source)) {
+				error("Ignoring PADO packet from non-unicast MAC address");
+				continue;
+			}
+			if (conn->req_peer
+				&& memcmp(packet.ethHdr.h_source, conn->req_peer_mac, ETH_ALEN) != 0) {
+				warn("Ignoring PADO packet from wrong MAC address");
+				continue;
+			}
+			if (parsePacket(&packet, parsePADOTags, &pc) < 0)
+				
+			if (conn->error)
+				return;
+			if (!pc.seenACName) {
+				error("Ignoring PADO packet with no AC-Name tag");
+				continue;
+			}
+			if (!pc.seenServiceName) {
+				error("Ignoring PADO packet with no Service-Name tag");
+				continue;
+			}
+			conn->numPADOs++;
+			if (pc.acNameOK && pc.serviceNameOK) {
+				memcpy(conn->peerEth, packet.ethHdr.h_source, ETH_ALEN);
+				conn->discoveryState = STATE_RECEIVED_PADO;
+				break;
+			}
+		}
     } while (conn->discoveryState != STATE_RECEIVED_PADO);
 }
 
@@ -457,7 +458,7 @@ sendPADR(PPPoEConnection *conn)
     UINT16_t plen;
 
     if (conn->serviceName) {
-	namelen = (UINT16_t) strlen(conn->serviceName);
+		namelen = (UINT16_t) strlen(conn->serviceName);
     }
     plen = TAG_HDR_SIZE + namelen;
     CHECK_ROOM(cursor, packet.payload, plen);
@@ -473,52 +474,52 @@ sendPADR(PPPoEConnection *conn)
     svc->type = TAG_SERVICE_NAME;
     svc->length = htons(namelen);
     if (conn->serviceName) {
-	memcpy(svc->payload, conn->serviceName, namelen);
+		memcpy(svc->payload, conn->serviceName, namelen);
     }
     cursor += namelen + TAG_HDR_SIZE;
 
     /* If we're using Host-Uniq, copy it over */
     if (conn->useHostUniq) {
-	PPPoETag hostUniq;
-	pid_t pid = getpid();
-	hostUniq.type = htons(TAG_HOST_UNIQ);
-	hostUniq.length = htons(sizeof(pid));
-	memcpy(hostUniq.payload, &pid, sizeof(pid));
-	CHECK_ROOM(cursor, packet.payload, sizeof(pid)+TAG_HDR_SIZE);
-	memcpy(cursor, &hostUniq, sizeof(pid) + TAG_HDR_SIZE);
-	cursor += sizeof(pid) + TAG_HDR_SIZE;
-	plen += sizeof(pid) + TAG_HDR_SIZE;
+		PPPoETag hostUniq;
+		pid_t pid = getpid();
+		hostUniq.type = htons(TAG_HOST_UNIQ);
+		hostUniq.length = htons(sizeof(pid));
+		memcpy(hostUniq.payload, &pid, sizeof(pid));
+		CHECK_ROOM(cursor, packet.payload, sizeof(pid)+TAG_HDR_SIZE);
+		memcpy(cursor, &hostUniq, sizeof(pid) + TAG_HDR_SIZE);
+		cursor += sizeof(pid) + TAG_HDR_SIZE;
+		plen += sizeof(pid) + TAG_HDR_SIZE;
     }
 
     /* Add our maximum MTU/MRU */
     if (MIN(lcp_allowoptions[0].mru, lcp_wantoptions[0].mru) > ETH_PPPOE_MTU) {
-	PPPoETag maxPayload;
-	UINT16_t mru = htons(MIN(lcp_allowoptions[0].mru, lcp_wantoptions[0].mru));
-	maxPayload.type = htons(TAG_PPP_MAX_PAYLOAD);
-	maxPayload.length = htons(sizeof(mru));
-	memcpy(maxPayload.payload, &mru, sizeof(mru));
-	CHECK_ROOM(cursor, packet.payload, sizeof(mru) + TAG_HDR_SIZE);
-	memcpy(cursor, &maxPayload, sizeof(mru) + TAG_HDR_SIZE);
-	cursor += sizeof(mru) + TAG_HDR_SIZE;
-	plen += sizeof(mru) + TAG_HDR_SIZE;
+		PPPoETag maxPayload;
+		UINT16_t mru = htons(MIN(lcp_allowoptions[0].mru, lcp_wantoptions[0].mru));
+		maxPayload.type = htons(TAG_PPP_MAX_PAYLOAD);
+		maxPayload.length = htons(sizeof(mru));
+		memcpy(maxPayload.payload, &mru, sizeof(mru));
+		CHECK_ROOM(cursor, packet.payload, sizeof(mru) + TAG_HDR_SIZE);
+		memcpy(cursor, &maxPayload, sizeof(mru) + TAG_HDR_SIZE);
+		cursor += sizeof(mru) + TAG_HDR_SIZE;
+		plen += sizeof(mru) + TAG_HDR_SIZE;
     }
 
     /* Copy cookie and relay-ID if needed */
     if (conn->cookie.type) {
-	CHECK_ROOM(cursor, packet.payload,
-		   ntohs(conn->cookie.length) + TAG_HDR_SIZE);
-	memcpy(cursor, &conn->cookie, ntohs(conn->cookie.length) + TAG_HDR_SIZE);
-	cursor += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
-	plen += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
+		CHECK_ROOM(cursor, packet.payload, ntohs(conn->cookie.length) + TAG_HDR_SIZE);
+		memcpy(cursor, &conn->cookie, ntohs(conn->cookie.length) + TAG_HDR_SIZE);
+		cursor += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
+		plen += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
     }
 
     if (conn->relayId.type) {
-	CHECK_ROOM(cursor, packet.payload,
-		   ntohs(conn->relayId.length) + TAG_HDR_SIZE);
-	memcpy(cursor, &conn->relayId, ntohs(conn->relayId.length) + TAG_HDR_SIZE);
-	cursor += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
-	plen += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
+		CHECK_ROOM(cursor, packet.payload, ntohs(conn->relayId.length) + TAG_HDR_SIZE);
+		memcpy(cursor, &conn->relayId, ntohs(conn->relayId.length) + TAG_HDR_SIZE);
+		cursor += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
+		plen += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
     }
+
+	addTR101(conn, &packet, &plen, &cursor);
 
     packet.length = htons(plen);
     sendPacket(conn, conn->discoverySocket, &packet, (int) (plen + HDR_SIZE));
@@ -673,4 +674,253 @@ discovery(PPPoEConnection *conn)
     /* We're done. */
     conn->discoveryState = STATE_SESSION;
     return;
+}
+
+/***********************************************************************
+*%FUNCTION: addTR101
+*%ARGUMENTS:
+* conn -- PPPoE connection structur
+* packet -- PPPoE packet structur
+* plen -- PPPoE packet length
+* cursor -- PPPoE payload cursor
+*%RETURNS:
+* Nothing
+*%DESCRIPTION:
+* Add BBF TR101 PPPoE Tag to PADI and PADR
+***********************************************************************/
+void
+addTR101(PPPoEConnection *conn, 
+         PPPoEPacket *packet,
+         unsigned short *plen, 
+		 unsigned char **cursor)
+{
+	unsigned short tlen = 4;
+	unsigned int vlen = 0;
+	unsigned int value32 = 0;
+	PPPoEVendorTag tag = {0};
+	if (conn->tr101) {
+		tag.type = htons(TAG_VENDOR_SPECIFIC);
+		tag.vendorid = htonl(0x00000DE9);
+		unsigned char *tlenc = *cursor + 2; // pointer to tag length field
+		CHECK_ROOM(*cursor, packet->payload, 4 + TAG_HDR_SIZE);
+		memcpy(*cursor, &tag, 4 + TAG_HDR_SIZE);
+		*cursor += 4 + TAG_HDR_SIZE;
+		*plen += 4 + TAG_HDR_SIZE;
+
+		/* add subtags */
+		vlen = conn->circuitid?strlen(conn->circuitid):0;
+		if (vlen > 0) {
+			info("circuitid: %s", conn->circuitid, vlen);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_AGENT_CIRCUIT_ID, conn->circuitid, vlen);
+		}
+		vlen = conn->remoteid?strlen(conn->remoteid):0;
+		if (vlen > 0) {
+			info("remoteid: %s", conn->remoteid);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_AGENT_REMOTE_ID, conn->remoteid, vlen);
+		}
+		if (conn->act_data_rate_up) {
+			info("act_data_rate_up: %d", conn->act_data_rate_up);
+			value32 = htonl(conn->act_data_rate_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ACT_DATA_RATE_UP, &value32, 4);
+		}
+		if (conn->act_data_rate_down) {
+			info("act_data_rate_down: %d", conn->act_data_rate_down);
+			value32 = htonl(conn->act_data_rate_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ACT_DATA_RATE_DOWN, &value32, 4);
+		}
+		if (conn->min_data_rate_up) {
+			info("min_data_rate_up: %d", conn->min_data_rate_up);
+			value32 = htonl(conn->min_data_rate_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_MIN_DATA_RATE_UP, &value32, 4);
+		}
+		if (conn->min_data_rate_down) {
+			info("min_data_rate_down: %d", conn->min_data_rate_down);
+			value32 = htonl(conn->min_data_rate_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_MIN_DATA_RATE_DOWN, &value32, 4);
+		}
+		if (conn->att_data_rate_up) {
+			info("att_data_rate_up: %d", conn->att_data_rate_up);
+			value32 = htonl(conn->att_data_rate_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ATT_DATA_RATE_UP, &value32, 4);
+		}
+		if (conn->att_data_rate_down) {
+			info("att_data_rate_down: %d", conn->att_data_rate_down);
+			value32 = htonl(conn->att_data_rate_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ATT_DATA_RATE_DOWN, &value32, 4);
+		}
+		if (conn->max_data_rate_up) {
+			info("max_data_rate_up: %d", conn->max_data_rate_up);
+			value32 = htonl(conn->max_data_rate_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_MAX_DATA_RATE_UP, &value32, 4);
+		}
+		if (conn->max_data_rate_down) {
+			info("max_data_rate_down: %d", conn->max_data_rate_down);
+			value32 = htonl(conn->max_data_rate_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_MAX_DATA_RATE_DOWN, &value32, 4);
+		}
+		if (conn->min_data_rate_up_lp) {
+			info("min_data_rate_up_lp: %d", conn->min_data_rate_up_lp);
+			value32 = htonl(conn->min_data_rate_up_lp);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_MIN_DATA_RATE_UP_LP, &value32, 4);
+		}
+		if (conn->min_data_rate_down_lp) {
+			info("min_data_rate_down_lp: %d", conn->min_data_rate_down_lp);
+			value32 = htonl(conn->min_data_rate_down_lp);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_MIN_DATA_RATE_DOWN_LP, &value32, 4);
+		}
+		if (conn->max_interl_delay_up) {
+			info("max_interl_delay_up: %d", conn->max_interl_delay_up);
+			value32 = htonl(conn->max_interl_delay_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_MAX_INTERL_DELAY_UP, &value32, 4);
+		}
+		if (conn->act_interl_delay_up) {
+			info("act_interl_delay_up: %d", conn->act_interl_delay_up);
+			value32 = htonl(conn->act_interl_delay_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ACT_INTERL_DELAY_UP, &value32, 4);
+		}
+		if (conn->max_interl_delay_down) {
+			info("max_interl_delay_down: %d", conn->max_interl_delay_down);
+			value32 = htonl(conn->max_interl_delay_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_MAX_INTERL_DELAY_DOWN, &value32, 4);
+		}
+		if (conn->act_interl_delay_down) {
+			info("act_interl_delay_down: %d", conn->act_interl_delay_down);
+			value32 = htonl(conn->act_interl_delay_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ACT_INTERL_DELAY_DOWN, &value32, 4);
+		}
+		if (conn->data_link || conn->encaps1 || conn->encaps2) {
+			info("data_link: %d", conn->data_link);
+			info("encaps1: %d", conn->encaps1);
+			info("encaps2: %d", conn->encaps2);
+			unsigned char data_link[3];
+			data_link[3] = conn->data_link;
+			data_link[2] = conn->encaps1;
+			data_link[1] = conn->encaps2;
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_DATA_LINK_ENCAP, &data_link, 3);
+		}
+		if (conn->dsl_type) {
+			info("dsl_type: %d", conn->dsl_type);
+			value32 = htonl(conn->dsl_type);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_DSL_TYPE, &value32, 4);
+		}
+		if (conn->etr_up) {
+			info("etr_up: %d", conn->etr_up);
+			value32 = htonl(conn->etr_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ETR_UP, &value32, 4);
+		}
+		if (conn->etr_down) {
+			info("etr_down: %d", conn->etr_down);
+			value32 = htonl(conn->etr_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ETR_DOWN, &value32, 4);
+		}
+		if (conn->attetr_up) {
+			info("attetr_up: %d", conn->attetr_up);
+			value32 = htonl(conn->attetr_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ATTETR_UP, &value32, 4);
+		}
+		if (conn->attetr_down) {
+			info("attetr_down: %d", conn->attetr_down);
+			value32 = htonl(conn->attetr_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ATTETR_DOWN, &value32, 4);
+		}
+		if (conn->gdr_up) {
+			info("gdr_up: %d", conn->gdr_up);
+			value32 = htonl(conn->gdr_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_GDR_UP, &value32, 4);
+		}
+		if (conn->gdr_down) {
+			info("gdr_down: %d", conn->gdr_down);
+			value32 = htonl(conn->gdr_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_GDR_DOWN, &value32, 4);
+		}
+		if (conn->attgdr_up) {
+			info("attgdr_up: %d", conn->attgdr_up);
+			value32 = htonl(conn->attgdr_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ATTGDR_UP, &value32, 4);
+		}
+		if (conn->attgdr_down) {
+			info("attgdr_down: %d", conn->attgdr_down);
+			value32 = htonl(conn->attgdr_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ATTGDR_DOWN, &value32, 4);
+		}
+		vlen = conn->pon_line?strlen(conn->pon_line):0;
+		if (vlen > 0) {
+			info("pon_line: %s", conn->pon_line);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_PON_LINE, conn->pon_line, vlen);
+		}
+		if (conn->pon_type) {
+			info("pon_type: %d", conn->pon_type);
+			value32 = htonl(conn->pon_type);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_PON_TYPE, &value32, 4);
+		}
+		if (conn->ont_onu_avg_rate_down) {
+			info("ont_onu_avg_rate_down: %d", conn->ont_onu_avg_rate_down);
+			value32 = htonl(conn->ont_onu_avg_rate_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ONT_ONU_AVG_DOWN, &value32, 4);
+		}
+		if (conn->ont_onu_peak_rate_down) {
+			info("ont_onu_peak_rate_down: %d", conn->ont_onu_peak_rate_down);
+			value32 = htonl(conn->ont_onu_peak_rate_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ONT_ONU_PEAK_DOWN, &value32, 4);
+		}
+		if (conn->ont_onu_max_rate_up) {
+			info("ont_onu_max_rate_up: %d", conn->ont_onu_max_rate_up);
+			value32 = htonl(conn->ont_onu_max_rate_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ONT_ONU_MAX_UP, &value32, 4);
+		}
+		if (conn->ont_onu_assured_rate_up) {
+			info("ont_onu_max_rate_up: %d", conn->ont_onu_assured_rate_up);
+			value32 = htonl(conn->ont_onu_assured_rate_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_ONT_ONU_ASS_UP, &value32, 4);
+		}
+		if (conn->pon_max_rate_up) {
+			info("pon_max_rate_up: %d", conn->pon_max_rate_up);
+			value32 = htonl(conn->pon_max_rate_up);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_PON_MAX_UP, &value32, 4);
+		}
+		if (conn->pon_max_rate_down) {
+			info("pon_max_rate_down: %d", conn->pon_max_rate_down);
+			value32 = htonl(conn->pon_max_rate_down);
+			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_PON_MAX_DOWN, &value32, 4);
+		}
+		/* update tag length field */
+		tlen = htons(tlen);
+		memcpy(tlenc, &tlen, 2);
+    }
+}
+
+/***********************************************************************
+*%FUNCTION: addTR101SubTag
+*%ARGUMENTS:
+* packet -- PPPoE packet structur
+* tlen -- TR101 tag length
+* plen -- PPPoE packet length
+* cursor -- PPPoE payload cursor
+* id -- TR101 subtag id
+* value -- TR101 subtag value
+* vlen -- TR101 subtag value length
+*%RETURNS:
+* Nothing
+*%DESCRIPTION:
+* Add variable length subtag to BBF TR101 PPPoE Tag
+***********************************************************************/
+void
+addTR101SubTag(PPPoEPacket *packet,
+		 unsigned char **cursor,
+		 unsigned short *tlen,
+         unsigned short *plen, 
+		 unsigned char id,
+		 void *value,
+		 unsigned char vlen)
+{
+	unsigned char taglen = vlen + 2;
+	PPPoEVendorSubTag subTag = {0};
+	subTag.subtag = id;
+	subTag.subtaglength = vlen;
+	memcpy(subTag.payload, (unsigned char *)value, vlen);
+	CHECK_ROOM(*cursor, packet->payload, taglen);
+	memcpy(*cursor, &subTag, taglen);
+	*cursor += taglen;
+	*tlen += taglen;
+	*plen += taglen;
 }

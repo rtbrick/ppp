@@ -135,6 +135,43 @@ extern UINT16_t Eth_PPPOE_Session;
 #define TAG_AC_SYSTEM_ERROR    0x0202
 #define TAG_GENERIC_ERROR      0x0203
 
+/* PPPoE Vendor-Specific BBF Sub-Tags (TR101) */
+#define SUBTAG_AGENT_CIRCUIT_ID         0x01
+#define SUBTAG_AGENT_REMOTE_ID          0x02
+#define SUBTAG_ACT_DATA_RATE_UP         0x81
+#define SUBTAG_ACT_DATA_RATE_DOWN       0x82
+#define SUBTAG_MIN_DATA_RATE_UP         0x83
+#define SUBTAG_MIN_DATA_RATE_DOWN       0x84
+#define SUBTAG_ATT_DATA_RATE_UP         0x85
+#define SUBTAG_ATT_DATA_RATE_DOWN       0x86
+#define SUBTAG_MAX_DATA_RATE_UP         0x87
+#define SUBTAG_MAX_DATA_RATE_DOWN       0x88
+#define SUBTAG_MIN_DATA_RATE_UP_LP      0x89
+#define SUBTAG_MIN_DATA_RATE_DOWN_LP    0x8a
+#define SUBTAG_MAX_INTERL_DELAY_UP      0x8b
+#define SUBTAG_ACT_INTERL_DELAY_UP      0x8c
+#define SUBTAG_MAX_INTERL_DELAY_DOWN    0x8d
+#define SUBTAG_ACT_INTERL_DELAY_DOWN    0x8e
+#define SUBTAG_DATA_LINK_ENCAP          0x90
+#define SUBTAG_DSL_TYPE                 0x91
+// draft-lihawi-ancp-protocol-access-extension-00
+#define SUBTAG_ETR_UP                   0x9b
+#define SUBTAG_ETR_DOWN                 0x9c
+#define SUBTAG_ATTETR_UP                0x9d
+#define SUBTAG_ATTETR_DOWN              0x9e
+#define SUBTAG_GDR_UP                   0x9f
+#define SUBTAG_GDR_DOWN                 0xa0
+#define SUBTAG_ATTGDR_UP                0xa1
+#define SUBTAG_ATTGDR_DOWN              0xa2
+#define SUBTAG_PON_LINE                 0x12
+#define SUBTAG_PON_TYPE                 0x92
+#define SUBTAG_ONT_ONU_AVG_DOWN         0x93
+#define SUBTAG_ONT_ONU_PEAK_DOWN        0x94
+#define SUBTAG_ONT_ONU_MAX_UP           0x95
+#define SUBTAG_ONT_ONU_ASS_UP           0x96
+#define SUBTAG_PON_MAX_UP               0x97
+#define SUBTAG_PON_MAX_DOWN             0x98
+
 /* Extensions from draft-carrel-info-pppoe-ext-00 */
 /* I do NOT like these tags one little bit */
 #define TAG_HURL               0x111
@@ -227,29 +264,81 @@ typedef struct PPPoEConnectionStruct {
     int discoveryState;		/* Where we are in discovery */
     int discoverySocket;	/* Raw socket for discovery frames */
     int sessionSocket;		/* Raw socket for session frames */
-    unsigned char myEth[ETH_ALEN]; /* My MAC address */
+    unsigned char myEth[ETH_ALEN];   /* My MAC address */
     unsigned char peerEth[ETH_ALEN]; /* Peer's MAC address */
-    unsigned char req_peer_mac[ETH_ALEN]; /* required peer MAC address */
-    unsigned char req_peer;	/* require mac addr to match req_peer_mac */
+    unsigned char req_peer_mac[ETH_ALEN]; /* Required peer MAC address */
+    unsigned char req_peer;	/* Require mac addr to match req_peer_mac */
     UINT16_t session;		/* Session ID */
-    char *ifName;		/* Interface name */
+    char *ifName;		    /* Interface name */
     char *serviceName;		/* Desired service name, if any */
-    char *acName;		/* Desired AC name, if any */
+    char *acName;		    /* Desired AC name, if any */
     int synchronous;		/* Use synchronous PPP */
     int useHostUniq;		/* Use Host-Uniq tag */
     int printACNames;		/* Just print AC names */
     FILE *debugFile;		/* Debug file for dumping packets */
-    int numPADOs;		/* Number of PADO packets received */
+    int numPADOs;		    /* Number of PADO packets received */
     PPPoETag cookie;		/* We have to send this if we get it */
     PPPoETag relayId;		/* Ditto */
-    int error;			/* Error packet received */
-    int debug;			/* Set to log packets sent and received */
-    int discoveryTimeout;       /* Timeout for discovery packets */
-    int discoveryAttempts;      /* Number of discovery attempts */
+    int error;			    /* Error packet received */
+    int debug;			    /* Set to log packets sent and received */
+    int discoveryTimeout;   /* Timeout for discovery packets */
+    int discoveryAttempts;  /* Number of discovery attempts */
     int seenMaxPayload;
-    int mtu;			/* Stored MTU */
-    int mru;			/* Stored MRU */
+    int mtu;			    /* Stored MTU */
+    int mru;			    /* Stored MRU */
+
+    // PPPoE Vendor-Specific BBF Sub-Tags (TR101)
+    int               tr101;
+    unsigned char     *remoteid;
+    unsigned char     *circuitid;
+    unsigned int      act_data_rate_up;
+    unsigned int      act_data_rate_down;
+    unsigned int      min_data_rate_up;
+    unsigned int      min_data_rate_down;
+    unsigned int      att_data_rate_up;
+    unsigned int      att_data_rate_down;
+    unsigned int      max_data_rate_up;
+    unsigned int      max_data_rate_down;
+    unsigned int      min_data_rate_up_lp;
+    unsigned int      min_data_rate_down_lp;
+    unsigned int      max_interl_delay_up;
+    unsigned int      act_interl_delay_up;
+    unsigned int      max_interl_delay_down;
+    unsigned int      act_interl_delay_down;
+    unsigned int      data_link;
+    unsigned int      encaps1;
+    unsigned int      encaps2;
+    unsigned int      dsl_type;
+    // draft-lihawi-ancp-protocol-access-extension-00
+    unsigned int      etr_up;
+    unsigned int      etr_down;
+    unsigned int      attetr_up;
+    unsigned int      attetr_down;
+    unsigned int      gdr_up;
+    unsigned int      gdr_down;
+    unsigned int      attgdr_up;
+    unsigned int      attgdr_down;
+    unsigned char     *pon_line;
+    unsigned int      pon_type;
+    unsigned int      ont_onu_avg_rate_down;
+    unsigned int      ont_onu_peak_rate_down;
+    unsigned int      ont_onu_max_rate_up;
+    unsigned int      ont_onu_assured_rate_up;
+    unsigned int      pon_max_rate_up;
+    unsigned int      pon_max_rate_down;
 } PPPoEConnection;
+
+typedef struct PPPoEVendorSubTagStruct {
+    unsigned char subtag:8;         /* sub tag type */
+    unsigned char subtaglength:8;   /* sub tag length */
+    unsigned char payload[ETH_DATA_LEN];
+} PPPoEVendorSubTag;
+
+typedef struct PPPoEVendorTagStruct {
+    unsigned int type:16;           /* tag type */
+    unsigned int length:16;         /* length of payload */
+    unsigned long int vendorid:32;  /* vendor id */
+} PPPoEVendorTag;
 
 /* Structure used to determine acceptable PADO or PADS packet */
 struct PacketCriteria {
@@ -289,6 +378,10 @@ void discovery(PPPoEConnection *conn);
 unsigned char *findTag(PPPoEPacket *packet, UINT16_t tagType,
 		       PPPoETag *tag);
 
+void addTR101(PPPoEConnection *conn, PPPoEPacket *packet, unsigned short *plen, unsigned char **cursor);
+void addTR101SubTag(PPPoEPacket *packet, unsigned char **cursor, unsigned short *tlen, unsigned short *plen, 
+                    unsigned char id, void *value, unsigned char vlen);
+
 void pppoe_printpkt(PPPoEPacket *packet,
 		    void (*printer)(void *, char *, ...), void *arg);
 void pppoe_log_packet(const char *prefix, PPPoEPacket *packet);
@@ -307,3 +400,5 @@ do {\
 #define NOT_UNICAST(e) ((e[0] & 0x01) != 0)
 #define BROADCAST(e) ((e[0] & e[1] & e[2] & e[3] & e[4] & e[5]) == 0xFF)
 #define NOT_BROADCAST(e) ((e[0] & e[1] & e[2] & e[3] & e[4] & e[5]) != 0xFF)
+
+
