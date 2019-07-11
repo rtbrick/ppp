@@ -793,9 +793,9 @@ addTR101(PPPoEConnection *conn,
 			info("encaps1: %d", conn->encaps1);
 			info("encaps2: %d", conn->encaps2);
 			unsigned char data_link[3];
-			data_link[3] = conn->data_link;
-			data_link[2] = conn->encaps1;
-			data_link[1] = conn->encaps2;
+			data_link[2] = conn->data_link;
+			data_link[1] = conn->encaps1;
+			data_link[0] = conn->encaps2;
 			addTR101SubTag(packet, cursor, &tlen, plen, SUBTAG_DATA_LINK_ENCAP, &data_link, 3);
 		}
 		if (conn->dsl_type) {
